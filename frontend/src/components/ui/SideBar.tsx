@@ -174,6 +174,7 @@ export default function SideBar({
         borderRight: '1px solid var(--border)',
         width: isMinimized ? '60px' : '280px'
       }}
+      onClick={isMinimized ? onToggleMinimize : undefined}
     >
       {/* Header */}
       <div className="p-4 border-b" style={{ borderColor: 'var(--border)' }}>
@@ -191,16 +192,14 @@ export default function SideBar({
             )}
           </div>
           
-          {onToggleMinimize && (
+          {onToggleMinimize && !isMinimized && (
             <button
               onClick={onToggleMinimize}
               className="p-1 rounded hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
-              title={isMinimized ? 'Expand sidebar' : 'Collapse sidebar'}
+              title="Collapse sidebar"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                  d={isMinimized ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} 
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
           )}
