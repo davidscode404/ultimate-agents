@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { buildApiUrl, API_CONFIG } from '@/config/api'
 
 interface SidebarProps {
   className?: string
@@ -13,6 +15,13 @@ interface SidebarProps {
 }
 
 type Theme = 'light' | 'dark' | 'system'
+
+interface SubscriptionStatus {
+  plan: string;
+  status: string;
+  credits: number;
+  next_billing_date?: string;
+}
 
 export default function SideBar({ 
   className = '', 
@@ -26,6 +35,8 @@ export default function SideBar({
   const [theme, setTheme] = useState<Theme>('system')
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null)
+  const supabase = createClient()
 
   // Load theme from localStorage on mount
   useEffect(() => {
@@ -48,6 +59,33 @@ export default function SideBar({
     
     localStorage.setItem('theme', theme)
   }, [theme])
+
+  // Fetch subscription status
+  useEffect(() => {
+    const fetchSubscriptionStatus = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+
+        const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.STRIPE_SUBSCRIPTION_STATUS), {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
+
+        if (response.ok) {
+          const status: SubscriptionStatus = await response.json();
+          setSubscriptionStatus(status);
+        }
+      } catch (error) {
+        console.error('Error fetching subscription status:', error);
+      }
+    };
+
+    fetchSubscriptionStatus();
+  }, [user, supabase]);
 
   const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme)
@@ -73,10 +111,10 @@ export default function SideBar({
   }
 
   const navigationItems = [
+    { href: '/protected/explore', label: 'Explore', icon: 'search' },
     { href: '/protected/create', label: 'Create Comic', icon: 'plus' },
     { href: '/protected/comics', label: 'My Comics', icon: 'book' },
-    { href: '/protected/explore', label: 'Explore', icon: 'search' },
-    { href: '/protected/credits', label: 'Credits', icon: 'coins' },
+    { href: '/protected/subscription', label: 'Subscription', icon: 'coins' },
   ]
 
   const getIcon = (iconName: string) => {
@@ -273,18 +311,20 @@ export default function SideBar({
           <div className="absolute bottom-full left-2 right-2 p-2 shadow-lg rounded-lg" style={{ backgroundColor: 'var(--background-secondary)', border: '1px solid var(--border)' }}>
             <div className="space-y-4">
               {/* Credits Section */}
-                <div className="p-3 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-hover)', border: '1px solid var(--border)' }}>
+              <div className="p-3 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-hover)', border: '1px solid var(--border)' }}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <div className="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center">
-                      <div className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--foreground)' }}>
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                      </svg>
                     </div>
-                    <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Credits</span>
+                    <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Subscription</span>
                   </div>
                   <Link 
-                    href="/protected/credits"
-                    className="px-3 py-1 text-xs font-medium rounded-md transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
-                    style={{ backgroundColor: 'var(--foreground)', color: 'var(--background-secondary)' }}
+                    href="/protected/subscription"
+                    className="px-3 py-1 text-xs font-medium rounded-md transition-colors hover:bg-orange-100 dark:hover:bg-orange-900/30"
+                    style={{ backgroundColor: 'var(--accent)', color: 'white' }}
                     onClick={() => setIsUserMenuOpen(false)}
                   >
                     Upgrade
@@ -292,12 +332,16 @@ export default function SideBar({
                 </div>
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs">
-                    <span style={{ color: 'var(--foreground-secondary)' }}>Total</span>
-                    <span style={{ color: 'var(--foreground)' }}>30,003</span>
+                    <span style={{ color: 'var(--foreground-secondary)' }}>Plan</span>
+                    <span style={{ color: 'var(--foreground)' }}>
+                      {subscriptionStatus?.plan || 'Free'}
+                    </span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span style={{ color: 'var(--foreground-secondary)' }}>Remaining</span>
-                    <span style={{ color: 'var(--foreground)' }}>6,361</span>
+                    <span style={{ color: 'var(--foreground-secondary)' }}>Credits</span>
+                    <span style={{ color: 'var(--foreground)' }}>
+                      {subscriptionStatus?.credits || 10}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -395,13 +439,15 @@ export default function SideBar({
                   <span>Get help</span>
                 </button>
 
-                <button 
-                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  {getIcon('upgrade')}
-                  <span>Upgrade plan</span>
-                </button>
+                  <Link 
+                    href="/protected/subscription"
+                    className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
+                    style={{ color: 'var(--foreground)' }}
+                    onClick={() => setIsUserMenuOpen(false)}
+                  >
+                    {getIcon('upgrade')}
+                    <span>Upgrade plan</span>
+                  </Link>
 
                 <Link 
                   href="/privacy-policy"

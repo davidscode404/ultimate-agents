@@ -11,6 +11,7 @@ export const API_CONFIG = {
     PUBLIC_COMICS: '/api/comics/public-comics',
     LIST_COMICS: '/api/comics/list-comics',  // New endpoint for saved-comics directory
     GENERATE_VOICE: '/api/voice-over/generate-voiceover',
+    STRIPE_SUBSCRIPTION_STATUS: '/api/stripe/subscription-status',
     
     // Legacy endpoints (still needed for compatibility)
     LOAD_COMIC: '/load-comic',  // Legacy endpoint in main.py

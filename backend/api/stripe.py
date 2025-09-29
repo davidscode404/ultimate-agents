@@ -1,63 +1,51 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 import stripe
 import os
 from typing import Optional
 from auth_shared import get_current_user
+import json
+from datetime import datetime
 
 # Initialize Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
-router = APIRouter()
+router = APIRouter(prefix="/api/stripe", tags=["stripe"])
 
-# Credit packages configuration
-CREDIT_PACKAGES = {
-    "credits_10": {"price": 500, "credits": 10},  # $5.00 in cents
-    "credits_25": {"price": 1000, "credits": 25},  # $10.00 in cents
-    "credits_50": {"price": 1800, "credits": 50},  # $18.00 in cents
-    "credits_100": {"price": 3000, "credits": 100},  # $30.00 in cents
+# Subscription plans configuration (in pence for GBP)
+SUBSCRIPTION_PLANS = {
+    "starter": {"price": 499, "credits": 100, "name": "Starter"},  # £4.99 in pence
+    "pro": {"price": 1999, "credits": 500, "name": "Pro"},  # £19.99 in pence
 }
 
-class PaymentIntentRequest(BaseModel):
-    packageId: str
-    userId: str
+class SubscriptionStatusResponse(BaseModel):
+    plan: str
+    status: str
+    credits: int
+    next_billing_date: Optional[str] = None
 
-class PaymentIntentResponse(BaseModel):
-    clientSecret: str
-
-@router.post("/create-payment-intent", response_model=PaymentIntentResponse)
-async def create_payment_intent(
-    request: PaymentIntentRequest,
+@router.get("/subscription-status", response_model=SubscriptionStatusResponse)
+async def get_subscription_status(
     current_user: dict = Depends(get_current_user)
 ):
-    """Create a Stripe PaymentIntent for purchasing credits"""
+    """Get user's current subscription status"""
     
-    # Verify the package exists
-    if request.packageId not in CREDIT_PACKAGES:
-        raise HTTPException(status_code=400, detail="Invalid package ID")
+    # TODO: In a real implementation, you would:
+    # 1. Check your database for the user's subscription status
+    # 2. Verify with Stripe if the subscription is still active
+    # 3. Return the current plan, status, and credits
     
-    package = CREDIT_PACKAGES[request.packageId]
-    
-    try:
-        # Create PaymentIntent
-        intent = stripe.PaymentIntent.create(
-            amount=package["price"],
-            currency="usd",
-            metadata={
-                "userId": request.userId,
-                "packageId": request.packageId,
-                "credits": str(package["credits"])
-            }
-        )
-        
-        return PaymentIntentResponse(clientSecret=intent.client_secret)
-        
-    except stripe.error.StripeError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    # For now, return a default free plan status
+    return SubscriptionStatusResponse(
+        plan="free",
+        status="active",
+        credits=10,
+        next_billing_date=None
+    )
 
 @router.post("/webhook")
-async def stripe_webhook(request):
-    """Handle Stripe webhooks for successful payments"""
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhooks for subscription events"""
     
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
@@ -71,21 +59,41 @@ async def stripe_webhook(request):
     except stripe.error.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Invalid signature")
     
-    # Handle successful payment
-    if event["type"] == "payment_intent.succeeded":
-        payment_intent = event["data"]["object"]
+    # Handle subscription events
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        customer_email = session["customer_details"]["email"]
         
-        # Extract metadata
-        user_id = payment_intent["metadata"]["userId"]
-        package_id = payment_intent["metadata"]["packageId"]
-        credits = int(payment_intent["metadata"]["credits"])
+        # TODO: Update user's subscription status in your database
+        # This would typically involve:
+        # 1. Finding the user by email
+        # 2. Updating their subscription plan and status
+        # 3. Setting their monthly credit allocation
         
-        # TODO: Add credits to user's account in your database
-        # This would typically involve updating a user_credits table
-        print(f"Payment succeeded: User {user_id} purchased {credits} credits")
+        print(f"Subscription created: Customer {customer_email} completed checkout")
         
-        # Here you would update your database to add credits to the user
-        # Example:
-        # await add_credits_to_user(user_id, credits)
+    elif event["type"] == "invoice.payment_succeeded":
+        invoice = event["data"]["object"]
+        customer_email = invoice["customer_email"]
+        
+        # TODO: Renew user's credits for the month
+        # This would typically involve:
+        # 1. Finding the user by email
+        # 2. Adding their monthly credit allocation
+        # 3. Updating next billing date
+        
+        print(f"Subscription renewed: Customer {customer_email} payment succeeded")
+        
+    elif event["type"] == "customer.subscription.deleted":
+        subscription = event["data"]["object"]
+        customer_email = subscription["customer_email"]
+        
+        # TODO: Downgrade user to free plan
+        # This would typically involve:
+        # 1. Finding the user by email
+        # 2. Setting their plan to "free"
+        # 3. Removing subscription benefits
+        
+        print(f"Subscription cancelled: Customer {customer_email} subscription deleted")
     
     return {"status": "success"}
