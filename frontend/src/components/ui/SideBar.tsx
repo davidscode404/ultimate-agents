@@ -25,6 +25,7 @@ export default function SideBar({
   const { user, signOut } = useAuth()
   const [theme, setTheme] = useState<Theme>('system')
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 
   // Load theme from localStorage on mount
   useEffect(() => {
@@ -48,380 +49,395 @@ export default function SideBar({
     localStorage.setItem('theme', theme)
   }, [theme])
 
-  // Handle click outside to close theme menu
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (isThemeMenuOpen) {
-        const target = event.target as Element
-        if (!target.closest('.theme-menu')) {
-          setIsThemeMenuOpen(false)
-        }
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [isThemeMenuOpen])
-
   const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme)
     setIsThemeMenuOpen(false)
   }
 
-  const getThemeIcon = () => {
-    switch (theme) {
-      case 'light':
-        return (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-        )
-      case 'dark':
-        return (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-          </svg>
-        )
-      case 'system':
-        return (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
-        )
-    }
+  const toggleUserMenu = () => {
+    setIsUserMenuOpen(!isUserMenuOpen)
+    setIsThemeMenuOpen(false)
   }
 
-  const navigation: Array<{
-    name: string
-    href: string
-    icon: React.ReactNode
-    onClick?: () => void
-  }> = [
-    {
-      name: 'Explore',
-      href: '/protected/explore',
-      icon: (
+  // Close user menu when sidebar is minimized
+  useEffect(() => {
+    if (isMinimized) {
+      setIsUserMenuOpen(false)
+      setIsThemeMenuOpen(false)
+    }
+  }, [isMinimized])
+
+  const handleSignOut = () => {
+    signOut()
+    setIsUserMenuOpen(false)
+  }
+
+  const navigationItems = [
+    { href: '/protected/create', label: 'Create Comic', icon: 'plus' },
+    { href: '/protected/comics', label: 'My Comics', icon: 'book' },
+    { href: '/protected/explore', label: 'Explore', icon: 'search' },
+    { href: '/protected/credits', label: 'Credits', icon: 'coins' },
+  ]
+
+  const getIcon = (iconName: string) => {
+    const icons = {
+      plus: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      ),
+      book: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      ),
+      search: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
-      )
-    },
-    {
-      name: 'Create Comic',
-      href: '/protected/create',
-      icon: (
+      ),
+      coins: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
         </svg>
       ),
-      onClick: onMinimize // Add minimize functionality to Create Comic
-    },
-    {
-      name: 'My Comics',
-      href: '/protected/comics',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+      settings: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
-      )
-    },
-    {
-      name: 'Profile',
-      href: '/protected/profile',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      ),
+      language: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+        </svg>
+      ),
+      help: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      upgrade: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      ),
+      learn: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      logout: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+      ),
+      chevronDown: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      ),
+      chevronUp: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      ),
+      chevronLeft: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      ),
+      chevronRight: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      ),
+      check: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
       )
     }
-  ]
+    return icons[iconName as keyof typeof icons] || null
+  }
+
+  const getUserInitials = () => {
+    if (!user?.email) return 'U'
+    return user.email.charAt(0).toUpperCase()
+  }
 
   return (
     <div 
-      className={`backdrop-blur-sm border-r h-screen flex flex-col transition-all duration-300 relative z-50 ${
-        isMinimized ? 'w-16 cursor-pointer' : 'w-64'
-      } ${className}`}
+      className={`flex flex-col h-full transition-all duration-300 ${className}`}
       style={{ 
-        pointerEvents: 'auto',
-        backgroundColor: 'var(--background-sidebar)',
-        borderColor: 'var(--border)'
+        backgroundColor: 'var(--background-secondary)',
+        borderRight: '1px solid var(--border)',
+        width: isMinimized ? '60px' : '280px'
       }}
-      onClick={isMinimized && onToggleMinimize ? onToggleMinimize : undefined}
     >
-      {/* Logo/Brand */}
-      <div className={`p-6 border-b flex-shrink-0 flex items-center ${
-        isMinimized ? 'justify-center' : 'justify-between'
-      }`}
-      style={{ borderColor: 'var(--border)' }}>
-         <Link 
-           href="/protected/explore" 
-           className={`flex items-center transition-all duration-300 ${isMinimized ? 'justify-center' : 'space-x-2'}`}
-           onClick={(e) => {
-             e.stopPropagation()
-             localStorage.setItem('lastVisitedPage', '/protected/explore')
-           }}
-         >
-           <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" style={{ color: 'var(--accent)' }}>
-             <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
-           </svg>
-          <span className={`text-xl font-bold transition-all duration-300 whitespace-nowrap ${
-            isMinimized ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
-          }`}
-          style={{ color: 'var(--foreground)' }}>
-            PixelPanel
-          </span>
-         </Link>
-        {onToggleMinimize && !isMinimized && (
-          <button
-            onClick={onToggleMinimize}
-            className="p-1 rounded-lg transition-colors"
-            style={{ 
-              color: 'var(--foreground)',
-              backgroundColor: 'transparent'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--background-tertiary)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-            }}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-        )}
+      {/* Header */}
+      <div className="p-4 border-b" style={{ borderColor: 'var(--border)' }}>
+        <div className="flex items-center justify-between">
+          <div className={`flex items-center transition-all duration-300 ${isMinimized ? 'justify-center' : 'space-x-3'}`}>
+            <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#92400e' }}>
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+              </svg>
+            </div>
+            {!isMinimized && (
+              <h1 className="text-lg font-semibold" style={{ color: 'var(--foreground)' }}>
+                PixelPanel
+              </h1>
+            )}
+          </div>
+          
+          {onToggleMinimize && (
+            <button
+              onClick={onToggleMinimize}
+              className="p-1 rounded hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+              title={isMinimized ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d={isMinimized ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} 
+                />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Navigation - Fixed height, no scroll */}
-      <nav className="p-4 space-y-2 flex-1">
-        {navigation.map((item) => {
+      {/* Navigation */}
+      <div className="flex-1 p-4 space-y-2">
+        {navigationItems.map((item) => {
           const isActive = pathname === item.href
-          const handleClick = () => {
-            console.log(`🔧 Handle click for: ${item.name}`)
-            if (item.onClick) {
-              console.log(`🔧 Executing onClick handler for: ${item.name}`)
-              item.onClick()
-            }
-          }
-          
           return (
             <Link
-              key={item.name}
+              key={item.href}
               href={item.href}
-              onClick={(e) => {
-                console.log(`🔍 Sidebar clicked: ${item.name} -> ${item.href}`)
-                e.preventDefault()
-                e.stopPropagation()
-                
-                // Execute any special onClick handler (like minimize for Create Comic)
-                handleClick()
-                
-                // Navigate with delay to allow minimize to complete
-                setTimeout(() => {
-                  console.log(`🚀 Navigating to: ${item.href}`)
-                  // Save the current page to localStorage before navigating
-                  localStorage.setItem('lastVisitedPage', item.href)
-                  router.push(item.href)
-                }, item.onClick ? 200 : 50) // Longer delay if there's an onClick handler
-              }}
-              className={`flex items-center transition-all duration-300 ${isMinimized ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg text-sm font-medium transition-colors`}
-              style={{
-                backgroundColor: isActive ? 'var(--accent)' : 'transparent',
-                color: isActive ? 'var(--foreground-inverse)' : 'var(--foreground-secondary)'
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'var(--background-tertiary)'
-                  e.currentTarget.style.color = 'var(--foreground)'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'transparent'
-                  e.currentTarget.style.color = 'var(--foreground-secondary)'
-                }
-              }}
-              title={isMinimized ? item.name : undefined}
+              className={`flex items-center transition-all duration-300 px-3 py-2 rounded-lg ${
+                isMinimized ? 'justify-center' : 'space-x-3'
+              } ${
+                isActive 
+                  ? 'bg-amber-500 text-white' 
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-stone-200 dark:hover:bg-stone-700'
+              }`}
+              title={isMinimized ? item.label : undefined}
             >
-              {item.icon}
-              <span className={`transition-all duration-300 whitespace-nowrap ${
-                isMinimized ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
-              }`}>
-                {item.name}
-              </span>
+              {getIcon(item.icon)}
+              {!isMinimized && (
+                <span className="text-sm font-medium">{item.label}</span>
+              )}
             </Link>
           )
         })}
-      </nav>
+      </div>
 
-      {/* User Info & Actions */}
-      <div className="p-4 border-t flex-shrink-0" style={{ borderColor: 'var(--border)' }}>
-        {/* Theme Toggle */}
-        <div className="relative mb-4 theme-menu">
+      {/* User Profile Button - always at the bottom */}
+      <div className="relative">
+        {/* User Profile Button */}
+        <div className="p-2">
           <button
-            onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
-            className={`w-full flex items-center transition-all duration-300 ${isMinimized ? 'justify-center' : 'justify-between'} px-3 py-2 text-sm rounded-lg transition-colors`}
-            style={{ 
-              color: 'var(--foreground-muted)',
-              backgroundColor: 'transparent'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--background-tertiary)'
-              e.currentTarget.style.color = 'var(--foreground)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-              e.currentTarget.style.color = 'var(--foreground-muted)'
-            }}
-            title={isMinimized ? 'Theme' : undefined}
+            onClick={toggleUserMenu}
+            className={`w-full flex items-center transition-all duration-300 ${
+              isMinimized ? 'justify-center' : 'space-x-3'
+            } p-3 rounded-lg transition-colors ${
+              isUserMenuOpen 
+                ? 'bg-stone-200 dark:bg-stone-700' 
+                : 'hover:bg-stone-200 dark:hover:bg-stone-700'
+            }`}
+            title={isMinimized ? 'User Profile' : undefined}
           >
-            <div className={`flex items-center transition-all duration-300 ${isMinimized ? 'space-x-0' : 'space-x-2'}`}>
-              {getThemeIcon()}
-              <span className={`transition-all duration-300 whitespace-nowrap ${
-                isMinimized ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
-              }`}>
-                Theme
+            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-amber-500">
+              <span className="text-sm font-medium text-white">
+                {getUserInitials()}
               </span>
             </div>
             {!isMinimized && (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              <>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    {user?.email?.split('@')[0] || 'User'}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Free Plan
+                  </p>
+                </div>
+                {getIcon(isUserMenuOpen ? 'chevronUp' : 'chevronDown')}
+              </>
             )}
           </button>
-          
-          {isThemeMenuOpen && !isMinimized && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg shadow-lg z-10"
-                 style={{
-                   backgroundColor: 'var(--background-card)',
-                   borderColor: 'var(--border)',
-                   border: '1px solid'
-                 }}>
-              <button
-                onClick={() => handleThemeChange('light')}
-                className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-t-lg transition-colors"
-                style={{
-                  backgroundColor: theme === 'light' ? 'var(--accent)' : 'transparent',
-                  color: theme === 'light' ? 'var(--foreground-inverse)' : 'var(--foreground-muted)'
-                }}
-                onMouseEnter={(e) => {
-                  if (theme !== 'light') {
-                    e.currentTarget.style.backgroundColor = 'var(--background-tertiary)'
-                    e.currentTarget.style.color = 'var(--foreground)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (theme !== 'light') {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                    e.currentTarget.style.color = 'var(--foreground-muted)'
-                  }
-                }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <span>Light</span>
-              </button>
-              <button
-                onClick={() => handleThemeChange('dark')}
-                className="w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors"
-                style={{
-                  backgroundColor: theme === 'dark' ? 'var(--accent)' : 'transparent',
-                  color: theme === 'dark' ? 'var(--foreground-inverse)' : 'var(--foreground-muted)'
-                }}
-                onMouseEnter={(e) => {
-                  if (theme !== 'dark') {
-                    e.currentTarget.style.backgroundColor = 'var(--background-tertiary)'
-                    e.currentTarget.style.color = 'var(--foreground)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (theme !== 'dark') {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                    e.currentTarget.style.color = 'var(--foreground-muted)'
-                  }
-                }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-                <span>Dark</span>
-              </button>
-              <button
-                onClick={() => handleThemeChange('system')}
-                className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-b-lg transition-colors"
-                style={{
-                  backgroundColor: theme === 'system' ? 'var(--accent)' : 'transparent',
-                  color: theme === 'system' ? 'var(--foreground-inverse)' : 'var(--foreground-muted)'
-                }}
-                onMouseEnter={(e) => {
-                  if (theme !== 'system') {
-                    e.currentTarget.style.backgroundColor = 'var(--background-tertiary)'
-                    e.currentTarget.style.color = 'var(--foreground)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (theme !== 'system') {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                    e.currentTarget.style.color = 'var(--foreground-muted)'
-                  }
-                }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span>System</span>
-              </button>
-            </div>
-          )}
         </div>
 
-        <div className={`flex items-center transition-all duration-300 mb-3 ${
-          isMinimized ? 'justify-center' : 'space-x-3'
-        }`}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--accent)' }}>
-            <span className="text-sm font-medium" style={{ color: 'var(--foreground-on-accent)' }}>
-              {user?.email?.charAt(0).toUpperCase()}
-            </span>
+        {/* Expanded User Menu - positioned absolutely above the button */}
+        {isUserMenuOpen && !isMinimized && (
+          <div className="absolute bottom-full left-2 right-2 p-2 shadow-lg rounded-lg" style={{ backgroundColor: 'var(--background-secondary)', border: '1px solid var(--border)' }}>
+            <div className="space-y-4">
+              {/* Credits Section */}
+                <div className="p-3 rounded-lg shadow-sm" style={{ backgroundColor: 'var(--background-hover)', border: '1px solid var(--border)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                      <div className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                    </div>
+                    <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Credits</span>
+                  </div>
+                  <Link 
+                    href="/protected/credits"
+                    className="px-3 py-1 text-xs font-medium rounded-md transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
+                    style={{ backgroundColor: 'var(--foreground)', color: 'var(--background-secondary)' }}
+                    onClick={() => setIsUserMenuOpen(false)}
+                  >
+                    Upgrade
+                  </Link>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span style={{ color: 'var(--foreground-secondary)' }}>Total</span>
+                    <span style={{ color: 'var(--foreground)' }}>30,003</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span style={{ color: 'var(--foreground-secondary)' }}>Remaining</span>
+                    <span style={{ color: 'var(--foreground)' }}>6,361</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Menu Items */}
+              <div className="space-y-1">
+                <Link 
+                  href="/protected/profile"
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
+                  style={{ color: 'var(--foreground)' }}
+                  onClick={() => setIsUserMenuOpen(false)}
+                >
+                  {getIcon('settings')}
+                  <span>Settings</span>
+                </Link>
+
+                <div className="relative">
+                  <div 
+                    onMouseEnter={() => setIsThemeMenuOpen(true)}
+                    onMouseLeave={() => setIsThemeMenuOpen(false)}
+                    className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
+                    style={{ color: 'var(--foreground)' }}
+                  >
+                    <span className="flex items-center space-x-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                      </svg>
+                      <span>Theme</span>
+                    </span>
+                    {getIcon(isThemeMenuOpen ? 'chevronLeft' : 'chevronRight')}
+                  </div>
+
+                  {isThemeMenuOpen && (
+                    <>
+                      {/* Invisible bridge to maintain hover */}
+                      <div 
+                        className="absolute left-full top-0 w-4 h-10 z-40" 
+                        onMouseEnter={() => setIsThemeMenuOpen(true)}
+                        onMouseLeave={() => setIsThemeMenuOpen(false)}
+                      />
+                      <div 
+                        className="absolute left-full top-0 ml-4 rounded-lg shadow-lg overflow-hidden min-w-[120px] z-50" 
+                        style={{ backgroundColor: 'var(--background-secondary)', border: '1px solid var(--border)' }}
+                        onMouseEnter={() => setIsThemeMenuOpen(true)}
+                        onMouseLeave={() => setIsThemeMenuOpen(false)}
+                      >
+                      <button
+                        onClick={() => handleThemeChange('light')}
+                        className="w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700"
+                        style={{ color: 'var(--foreground)' }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <span>Light</span>
+                      </button>
+                      <button
+                        onClick={() => handleThemeChange('dark')}
+                        className="w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700"
+                        style={{ color: 'var(--foreground)' }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                        <span>Dark</span>
+                      </button>
+                      <button
+                        onClick={() => handleThemeChange('system')}
+                        className="w-full flex items-center space-x-2 px-3 py-2 text-sm transition-colors rounded-lg hover:bg-stone-200 dark:hover:bg-stone-700"
+                        style={{ color: 'var(--foreground)' }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <span>System</span>
+                      </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <button 
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  {getIcon('language')}
+                  <span>Language</span>
+                </button>
+
+                <button 
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  {getIcon('help')}
+                  <span>Get help</span>
+                </button>
+
+                <button 
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  {getIcon('upgrade')}
+                  <span>Upgrade plan</span>
+                </button>
+
+                <Link 
+                  href="/privacy-policy"
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
+                  style={{ color: 'var(--foreground)' }}
+                  onClick={() => setIsUserMenuOpen(false)}
+                >
+                  {getIcon('learn')}
+                  <span>Privacy Policy</span>
+                </Link>
+
+                <Link 
+                  href="/terms-of-service"
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
+                  style={{ color: 'var(--foreground)' }}
+                  onClick={() => setIsUserMenuOpen(false)}
+                >
+                  {getIcon('learn')}
+                  <span>Terms of Service</span>
+                </Link>
+
+                <hr className="my-2" style={{ borderColor: 'var(--border)' }} />
+
+                <button 
+                  onClick={handleSignOut}
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  {getIcon('logout')}
+                  <span>Log out</span>
+                </button>
+              </div>
+            </div>
           </div>
-          <div className={`transition-all duration-300 overflow-hidden ${
-            isMinimized ? 'opacity-0 w-0' : 'opacity-100 w-auto flex-1 min-w-0'
-          }`}>
-            <p className="text-sm font-medium truncate" style={{ color: 'var(--foreground)' }}>
-              {user?.email}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation() // Prevent sidebar expansion when clicking sign out
-            signOut()
-          }}
-          className={`w-full flex items-center transition-all duration-300 ${isMinimized ? 'justify-center' : 'space-x-2'} px-3 py-2 text-sm rounded-lg transition-colors`}
-          style={{ 
-            color: 'var(--foreground-muted)',
-            backgroundColor: 'transparent'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--background-tertiary)'
-            e.currentTarget.style.color = 'var(--foreground)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-            e.currentTarget.style.color = 'var(--foreground-muted)'
-          }}
-          title={isMinimized ? 'Sign Out' : undefined}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          <span className={`transition-all duration-300 whitespace-nowrap ${
-            isMinimized ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'
-          }`}>
-            Sign Out
-          </span>
-        </button>
+        )}
       </div>
     </div>
   )
