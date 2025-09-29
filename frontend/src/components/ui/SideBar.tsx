@@ -111,10 +111,10 @@ export default function SideBar({
   }
 
   const navigationItems = [
-    { href: '/protected/explore', label: 'Explore', icon: 'search' },
-    { href: '/protected/create', label: 'Create Comic', icon: 'plus' },
-    { href: '/protected/comics', label: 'My Comics', icon: 'book' },
-    { href: '/protected/subscription', label: 'Subscription', icon: 'coins' },
+    { href: '/app/explore', label: 'Explore', icon: 'search' },
+    { href: '/app/create', label: 'Create Comic', icon: 'plus' },
+    { href: '/app/comics', label: 'My Comics', icon: 'book' },
+    { href: '/app/subscription', label: 'Subscription', icon: 'coins' },
   ]
 
   const getIcon = (iconName: string) => {
@@ -322,7 +322,7 @@ export default function SideBar({
                     <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Subscription</span>
                   </div>
                   <Link 
-                    href="/protected/subscription"
+                    href="/app/subscription"
                     className="px-3 py-1 text-xs font-medium rounded-md transition-colors hover:bg-orange-100 dark:hover:bg-orange-900/30"
                     style={{ backgroundColor: 'var(--accent)', color: 'white' }}
                     onClick={() => setIsUserMenuOpen(false)}
@@ -349,7 +349,7 @@ export default function SideBar({
               {/* Menu Items */}
               <div className="space-y-1">
                 <Link 
-                  href="/protected/profile"
+                  href="/app/profile"
                   className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
                   style={{ color: 'var(--foreground)' }}
                   onClick={() => setIsUserMenuOpen(false)}
@@ -439,15 +439,15 @@ export default function SideBar({
                   <span>Get help</span>
                 </button>
 
-                  <Link 
-                    href="/protected/subscription"
-                    className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
-                    style={{ color: 'var(--foreground)' }}
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    {getIcon('upgrade')}
-                    <span>Upgrade plan</span>
-                  </Link>
+                <Link 
+                  href="/app/subscription"
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-colors hover:bg-stone-200 dark:hover:bg-stone-700"
+                  style={{ color: 'var(--foreground)' }}
+                  onClick={() => setIsUserMenuOpen(false)}
+                >
+                  {getIcon('upgrade')}
+                  <span>Upgrade plan</span>
+                </Link>
 
                 <Link 
                   href="/privacy-policy"
